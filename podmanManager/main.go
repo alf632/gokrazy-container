@@ -20,7 +20,7 @@ type PodmanInstance struct {
 	privileged  bool
 	volumes     []string
 
-	devices     []string
+	devices []string
 
 	buildContext string
 }
@@ -31,6 +31,10 @@ func NewPodmanInstance(name, image, tag, volumesStr string, hostNetwork, privile
 }
 
 func (pi PodmanInstance) AddDevice(device string) {
+	pi.devices = append(pi.devices, device)
+}
+
+func (pi PodmanInstance) AddBuildContext(device string) {
 	pi.devices = append(pi.devices, device)
 }
 
@@ -55,7 +59,7 @@ func (pi PodmanInstance) build() error {
 func (pi PodmanInstance) Run() error {
 	gokrazy.WaitForClock()
 
-	if !pi.checkImageExists() {
+	if !pi.checkImageExists() && len(pi.buildContext) > 0 {
 		pi.build()
 	}
 
