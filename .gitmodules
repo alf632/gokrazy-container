@@ -1,0 +1,6 @@
+[submodule "dalybms/dalybms/_gokrazy/extrafiles/opt/dalybms/python-daly-bms"]
+	path = dalybms/dalybms/_gokrazy/extrafiles/opt/dalybms/python-daly-bms
+	url = https://github.com/cs224/python-daly-bms.git
+[submodule "dalybms/_gokrazy/extrafiles/opt/dalybms/python-daly-bms"]
+	path = dalybms/_gokrazy/extrafiles/opt/dalybms/python-daly-bms
+	url = https://github.com/cs224/python-daly-bms.git
