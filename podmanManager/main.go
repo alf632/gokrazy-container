@@ -34,8 +34,8 @@ func (pi PodmanInstance) AddDevice(device string) {
 	pi.devices = append(pi.devices, device)
 }
 
-func (pi PodmanInstance) AddBuildContext(device string) {
-	pi.devices = append(pi.devices, device)
+func (pi PodmanInstance) AddBuildContext(bcontext string) {
+	pi.buildContext = bcontext
 }
 
 func (pi PodmanInstance) checkImageExists() bool {
