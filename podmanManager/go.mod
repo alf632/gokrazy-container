@@ -1,4 +1,4 @@
-module github.com/alf632/gokrazy-ha/podmanManager
+module github.com/alf632/gokrazy-container/podmanManager
 
 go 1.21.1
 
