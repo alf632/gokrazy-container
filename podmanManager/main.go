@@ -20,12 +20,18 @@ type PodmanInstance struct {
 	privileged  bool
 	volumes     []string
 
+	devices     []string
+
 	buildContext string
 }
 
 func NewPodmanInstance(name, image, tag, volumesStr string, hostNetwork, privileged bool) *PodmanInstance {
 	volumes := strings.Split(volumesStr, ",")
 	return &PodmanInstance{name: name, image: image, tag: tag, hostNetwork: hostNetwork, privileged: privileged, volumes: volumes}
+}
+
+func (pi PodmanInstance) AddDevice(device string) {
+	pi.devices = append(pi.devices, device)
 }
 
 func (pi PodmanInstance) checkImageExists() bool {
@@ -66,6 +72,9 @@ func (pi PodmanInstance) Run() error {
 	}
 
 	startArgs := []string{"run", "-td"}
+	for _, device := range pi.devices {
+		startArgs = append(startArgs, "--device", device)
+	}
 	for _, volume := range pi.volumes {
 		startArgs = append(startArgs, "-v", volume)
 	}
