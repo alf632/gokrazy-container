@@ -19,23 +19,62 @@ type PodmanInstance struct {
 	hostNetwork bool
 	privileged  bool
 	volumes     []string
+	envVars     []string
 
 	devices []string
 
 	buildContext string
 }
 
-func NewPodmanInstance(name, image, tag, volumesStr string, hostNetwork, privileged bool) *PodmanInstance {
-	volumes := strings.Split(volumesStr, ",")
-	return &PodmanInstance{name: name, image: image, tag: tag, hostNetwork: hostNetwork, privileged: privileged, volumes: volumes}
+func NewPodmanInstance(name, image, tag string, hostNetwork, privileged bool) *PodmanInstance {
+	return &PodmanInstance{name: name, image: image, tag: tag, hostNetwork: hostNetwork, privileged: privileged}
 }
 
-func (pi PodmanInstance) AddDevice(device string) {
+func (pi *PodmanInstance) AddVolume(volume string, mkdir bool) {
+	println("adding Volume: ", volume)
+	if mkdir {
+		dir := strings.Split(volume, ":")[0]
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			log.Println("Creating Dir", dir)
+			mkdirP(dir)
+		}
+	}
+	pi.volumes = append(pi.volumes, volume)
+}
+
+func mkdirP(dir string) {
+	if err := syscall.Mkdir(dir, 0666); err != nil {
+		if err == syscall.ENOENT {
+			volSplit := strings.Split(dir, "/")
+			if len(volSplit) > 1 {
+				parent := strings.Join(volSplit[:len(volSplit)-1], "/")
+				log.Println("creating parent", parent)
+				mkdirP(parent)
+			} else {
+				log.Println("giving up recursion")
+			}
+			return
+		} else if err != syscall.EEXIST {
+			log.Fatal(err)
+		}
+		// The directory already exists
+		log.Printf("directory exists")
+	}
+}
+
+func (pi *PodmanInstance) AddDevice(device string) {
+	println("adding Device: ", device)
 	pi.devices = append(pi.devices, device)
 }
 
-func (pi PodmanInstance) AddBuildContext(bcontext string) {
+func (pi *PodmanInstance) AddBuildContext(bcontext string) {
+	println("adding BuildContext:", bcontext)
 	pi.buildContext = bcontext
+}
+
+func (pi *PodmanInstance) AddEnv(envVar string) {
+	println("adding BuildContext:", envVar)
+	pi.envVars = append(pi.envVars, envVar)
 }
 
 func (pi PodmanInstance) checkImageExists() bool {
@@ -44,10 +83,13 @@ func (pi PodmanInstance) checkImageExists() bool {
 		log.Print(err)
 		return false
 	}
-	return lines > 0
+	exists := lines > 0
+	println("image exists: ", exists)
+	return exists
 }
 
 func (pi PodmanInstance) build() error {
+	log.Println("building image", pi.image)
 	if err := podman("build",
 		"-t", pi.image+":"+pi.tag,
 		pi.buildContext); err != nil {
@@ -60,7 +102,10 @@ func (pi PodmanInstance) Run() error {
 	gokrazy.WaitForClock()
 
 	if !pi.checkImageExists() && len(pi.buildContext) > 0 {
-		pi.build()
+		if err := pi.build(); err != nil {
+			return err
+		}
+
 	}
 
 	if err := mountVar(); err != nil {
@@ -82,6 +127,9 @@ func (pi PodmanInstance) Run() error {
 	for _, volume := range pi.volumes {
 		startArgs = append(startArgs, "-v", volume)
 	}
+	for _, envVar := range pi.envVars {
+		startArgs = append(startArgs, "-e", envVar)
+	}
 	if pi.hostNetwork {
 		startArgs = append(startArgs, "--network", "host")
 	}
@@ -90,6 +138,7 @@ func (pi PodmanInstance) Run() error {
 	}
 	startArgs = append(startArgs, "--name", pi.name, pi.image+":"+pi.tag)
 
+	log.Println("starting Container with:", startArgs)
 	if err := podman(startArgs...); err != nil {
 		return err
 	}
@@ -133,6 +182,14 @@ func mountVar() error {
 			log.Printf("/var file system already mounted, nothing to do")
 			return nil
 		}
+	}
+
+	if err := syscall.Mkdir("/perm/container-storage", 0600); err != nil {
+		if err != syscall.EEXIST {
+			return err
+		}
+		// The directory already exists
+		log.Printf("directory already exists")
 	}
 
 	if err := syscall.Mount("/perm/container-storage", "/var", "", syscall.MS_BIND, ""); err != nil {
