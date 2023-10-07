@@ -43,7 +43,7 @@ func (pi *PodmanInstance) AddVolume(volume string, mkdir bool) {
 }
 
 func mkdirP(dir string) {
-	if err := syscall.Mkdir(dir, 0666); err != nil {
+	if err := syscall.Mkdir(dir, 0777); err != nil {
 		if err == syscall.ENOENT {
 			volSplit := strings.Split(dir, "/")
 			if len(volSplit) > 1 {
