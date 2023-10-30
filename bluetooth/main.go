@@ -18,7 +18,7 @@ func main() {
 		"bluetooth",
 		"localhost/gokrazy-bluetooth",
 		"latest",
-		"/etc/localtime:/etc/localtime:ro,/run:/run",
+		"/etc/localtime:/etc/localtime:ro,/run:/run,/opt/bluetooth/bt-agent.conf:/opt/bt-agent.conf",
 		true,
 		true)
 	container.AddBuildContext("/opt/bluetooth")
