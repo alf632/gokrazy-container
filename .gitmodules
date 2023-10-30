@@ -4,3 +4,8 @@
 [submodule "dalybms/_gokrazy/extrafiles/opt/dalybms/python-daly-bms"]
 	path = dalybms/_gokrazy/extrafiles/opt/dalybms/python-daly-bms
 	url = https://github.com/cs224/python-daly-bms.git
+[submodule "hostapd/_gokrazy/extrafiles/opt/hostapd"]
+	path = hostapd/_gokrazy/extrafiles/opt/hostapd
+	url = https://github.com/J-Siu/docker_hostapd.git
+[submodule "victronConnect/_gokrazy/extrafiles/opt/victronConnect/victron"]
+	path = victronConnect/_gokrazy/extrafiles/opt/victronConnect/victron
