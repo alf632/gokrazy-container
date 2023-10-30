@@ -8,7 +8,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/bitfield/script"
 	"github.com/gokrazy/gokrazy"
 )
 
@@ -78,19 +77,22 @@ func (pi *PodmanInstance) AddEnv(envVar string) {
 }
 
 func (pi PodmanInstance) checkImageExists() bool {
-	lines, err := script.Exec("/usr/local/bin/podman images").Match(pi.image).CountLines()
+	cmd := exec.Command("/usr/local/bin/podman", "images")
+	cmd.Env = expandPath(os.Environ())
+	cmd.Env = append(cmd.Env, "TMPDIR=/tmp")
+	out, err := cmd.CombinedOutput()
+	outStr := string(out)
 	if err != nil {
-		log.Print(err)
-		return false
+		log.Fatalf("looking up images failed with %s\n", err)
 	}
-	exists := lines > 0
-	println("image exists: ", exists)
+	exists := strings.Contains(outStr, pi.image)
+	fmt.Println("image exists:", exists)
 	return exists
 }
 
 func (pi PodmanInstance) build() error {
 	log.Println("building image", pi.image)
-	if err := podman("build",
+	if err := podman("build", "--no-cache",
 		"-t", pi.image+":"+pi.tag,
 		pi.buildContext); err != nil {
 		return err
@@ -99,17 +101,19 @@ func (pi PodmanInstance) build() error {
 }
 
 func (pi PodmanInstance) Run() error {
-	gokrazy.WaitForClock()
-
-	if !pi.checkImageExists() && len(pi.buildContext) > 0 {
-		if err := pi.build(); err != nil {
-			return err
-		}
-
-	}
-
 	if err := mountVar(); err != nil {
 		return err
+	}
+
+	exists := pi.checkImageExists()
+	if !exists {
+		// wait for ntp aka. internet connection
+		gokrazy.WaitForClock()
+		if len(pi.buildContext) > 0 {
+			if err := pi.build(); err != nil {
+				return err
+			}
+		}
 	}
 
 	if err := podman("kill", pi.name); err != nil {
